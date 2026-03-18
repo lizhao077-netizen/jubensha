@@ -2,74 +2,256 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>彩色旋转摩天轮留言板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>摩天轮双人对话</title>
     <style>
-        /* 基础样式 */
+        :root {
+            --primary-color: #ff7675;
+            --bg-dark: #1a1a2e;
+        }
+
         body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: 'PingFang SC', sans-serif;
-            background: #1a1a2e; /* 深蓝色背景，衬托彩色摩天轮 */
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg-dark);
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
             overflow: hidden;
         }
 
-        /* 摩天轮旋转容器 */
-        .ferris-wheel-container {
+        /* --- 旋转摩天轮背景 --- */
+        .ferris-wheel-bg {
             position: fixed;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 600px;
-            height: 600px;
-            z-index: -1;
-            opacity: 0.6; /* 适当透明，不干扰留言板 */
-        }
-
-        /* 摩天轮主体：彩色图片旋转 */
-        .ferris-wheel {
-            width: 100%;
-            height: 100%;
-            background-image: url('https://img.icons8.com/color/480/ferris-wheel.png'); /* 彩色摩天轮图标 */
+            width: 90vw; height: 90vw;
+            max-width: 500px; max-height: 500px;
+            background: url('https://img.icons8.com/color/480/ferris-wheel.png') no-repeat center;
             background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            /* 关键动画：无限旋转 */
-            animation: rotateWheel 20s linear infinite;
+            opacity: 0.4;
+            animation: rotateWheel 30s linear infinite;
+            z-index: 1;
+        }
+        @keyframes rotateWheel { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* --- 留言板主容器 --- */
+        .chat-container {
+            position: fixed;
+            bottom: 20px; left: 5%;
+            width: 90%;
+            z-index: 10;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* 旋转动画定义 */
-        @keyframes rotateWheel {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        /* 留言板 UI */
-        .container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            padding: 20px;
+        /* 收缩状态样式 */
+        .chat-container.collapsed {
+            transform: translateY(calc(100% - 50px));
         }
 
         .chat-box {
-            width: 100%;
-            max-width: 380px;
-            height: 70vh;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 25px;
-            backdrop-filter: blur(15px); /* 毛玻璃效果 */
+            border-radius: 20px;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            height: 60vh;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
+        /* 头部控制栏 */
         .chat-header {
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* 身份切换区域 */
+        .identity-toggle {
+            display: flex;
+            gap: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            justify-content: center;
+        }
+
+        .user-profile {
+            position: relative;
+            width: 45px; height: 45px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .user-profile.active { border-color: var(--primary-color); transform: scale(1.1); }
+
+        .user-profile img {
+            width: 100%; height: 100%;
+            border-radius: 50%; object-fit: cover;
+            background: #eee;
+        }
+
+        .user-profile input { display: none; }
+
+        /* 消息展示区 */
+        .messages-list {
+            flex: 1;
             padding: 15px;
-            text-align: center;
-            color: #fff;
-            font-size: 1.1rem;
-            letter-spacing: 2px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .msg {
+            max-width: 75%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .msg.left { align-self: flex-start; background: rgba(255,255,255,0.9); color: #333; }
+        .msg.right { align-self: flex-end; background: var(--primary-color); color: white; flex-direction: row-reverse; }
+
+        .msg-avatar { width: 30px; height: 30px; border-radius: 50%; }
+
+        /* 输入区 */
+        .input-area {
+            padding: 10px;
+            display: flex;
+            gap: 8px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        #msg-input {
+            flex: 1;
+            border: none;
+            border-radius: 18px;
+            padding: 8px 15px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        #send-btn {
+            background: var(--primary-color);
+            color: white; border: none;
+            border-radius: 18px;
+            padding: 0 15px;
+            font-weight: bold;
+        }
+
+        .collapse-icon { transition: 0.3s; }
+        .collapsed .collapse-icon { transform: rotate(180deg); }
+    </style>
+</head>
+<body>
+
+    <div class="ferris-wheel-bg"></div>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-box">
+            <div class="chat-header" onclick="toggleChat()">
+                <span>🎡 对话留言板</span>
+                <span class="collapse-icon">▼</span>
+            </div>
+
+            <div class="identity-toggle">
+                <div class="user-profile active" id="profileA" onclick="switchUser('A')">
+                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=A" id="imgA">
+                    <input type="file" id="fileA" accept="image/*" onchange="loadImg(event, 'A')">
+                </div>
+                <div class="user-profile" id="profileB" onclick="switchUser('B')">
+                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=B" id="imgB">
+                    <input type="file" id="fileB" accept="image/*" onchange="loadImg(event, 'B')">
+                </div>
+                <p style="color:rgba(255,255,255,0.6); font-size:10px; margin:0; align-self:center;">长按头像更换</p >
+            </div>
+
+            <div class="messages-list" id="msgList">
+                <div class="msg left">
+                    <img class="msg-avatar" src="https://api.dicebear.com/7.x/adventurer/svg?seed=A">
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="msg-input" placeholder="输入内容...">
+                <button id="send-btn" onclick="send()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = 'A';
+        const avatars = {
+            A: 'https://api.dicebear.com/7.x/adventurer/svg?seed=A',
+            B: 'https://api.dicebear.com/7.x/adventurer/svg?seed=B'
+        };
+
+        // 切换用户
+        function switchUser(user) {
+            currentUser = user;
+            document.querySelectorAll('.user-profile').forEach(p => p.classList.remove('active'));
+            document.getElementById(`profile${user}`).classList.add('active');
+        }
+
+        // 长按触发上传 (简单适配手机)
+        document.querySelectorAll('.user-profile').forEach(el => {
+            let timer;
+            el.addEventListener('touchstart', () => timer = setTimeout(() => el.querySelector('input').click(), 600));
+            el.addEventListener('touchend', () => clearTimeout(timer));
+            el.addEventListener('contextmenu', e => e.preventDefault()); // 禁止系统菜单
+        });
+
+        // 本地加载图片
+        function loadImg(event, user) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const url = e.target.result;
+                    avatars[user] = url;
+                    document.getElementById(`img${user}`).src = url;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 发送消息
+        function send() {
+            const input = document.getElementById('msg-input');
+            const list = document.getElementById('msgList');
+            if (!input.value.trim()) return;
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `msg ${currentUser === 'A' ? 'left' : 'right'}`;
+            msgDiv.innerHTML = `
+                < img class="msg-avatar" src="${avatars[currentUser]}">
+                ${input.value}
+            `;
+
+            list.appendChild(msgDiv);
+            input.value = '';
+            list.scrollTop = list.scrollHeight;
+        }
+
+        // 收缩/展开
+        function toggleChat() {
+            document.getElementById('chatContainer').classList.toggle('collapsed');
+        }
+
+        // 回车发送
+        document.getElementById('msg-input').addEventListener('keypress', e => {
+            if(e.key === 'Enter') send();
+        });
+    </script>
+</body>
+</html>
