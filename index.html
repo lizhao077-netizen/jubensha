@@ -3,17 +3,219 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的个人网页</title>
+    <title>幸福摩天轮留言板</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f4f4; }
-        .card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
-        h1 { color: #07C160; }
+        /* 全局样式 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            overflow: hidden; /* 防止背景滚动 */
+        }
+
+        /* 背景：全屏摩天轮 */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* 这里使用一张高质量的公开摩天轮图片，你也可以替换为你自己的链接 */
+            background-image: url('https://images.unsplash.com/photo-1516900412122-83b9f69796e9?q=80&w=1600&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            filter: blur(3px) brightness(0.8); /* 添加模糊和昏暗效果，突出留言板 */
+            z-index: -1;
+        }
+
+        /* 留言板主容器 */
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .chat-box {
+            width: 100%;
+            max-width: 400px;
+            height: 80vh;
+            background: rgba(255, 255, 255, 0.85); /* 半透明白色背景 */
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px); /* 磨砂玻璃效果 */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 留言板头部 */
+        .chat-header {
+            background-color: #f78fb3; /* 浪漫的粉色 */
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* 留言显示区域 */
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto; /* 允许垂直滚动 */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* 单条留言样式 */
+        .message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 10px;
+            line-height: 1.4;
+            font-size: 0.9rem;
+            word-wrap: break-word;
+        }
+
+        /* "我"发出的留言 */
+        .message.sent {
+            background-color: #07C160; /* 微信绿 */
+            color: white;
+            align-self: flex-end; /* 靠右显示 */
+            border-bottom-right-radius: 2px;
+        }
+
+        /* "别人"发出的留言 (示例用) */
+        .message.received {
+            background-color: #e9e9eb;
+            color: #333;
+            align-self: flex-start; /* 靠左显示 */
+            border-bottom-left-radius: 2px;
+        }
+
+        /* 时间戳样式 */
+        .message-time {
+            font-size: 0.7rem;
+            display: block;
+            margin-top: 5px;
+            opacity: 0.7;
+        }
+
+        /* 输入区域 */
+        .chat-input-area {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        #send-btn {
+            background-color: #f78fb3;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        #send-btn:hover {
+            background-color: #cf7191;
+        }
+
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>欢迎访问</h1>
-        <p>这是我通过 Gitee Pages 部署的网页</p >
+
+    <div class="background"></div>
+
+    <div class="container">
+        <div class="chat-box">
+            <div class="chat-header">
+                🎡 摩天轮留言板
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                <div class="message received">
+                    你好啊！欢迎来到摩天轮留言板。
+                    <span class="message-time">10:00</span>
+                </div>
+                <div class="message sent">
+                    哇，这里的背景好浪漫！
+                    <span class="message-time">10:01</span>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <input type="text" id="message-input" placeholder="写下你的愿望或留言..." autocapitalize="off">
+                <button id="send-btn">发送</button>
+            </div>
+        </div>
     </div>
+
+    <script>
+        // 获取 DOM 元素
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatMessages = document.getElementById('chat-messages');
+
+        // 发送留言的函数
+        function sendMessage() {
+            const text = messageInput.value.trim(); // 获取输入内容并去掉首尾空格
+            
+            if (text === "") {
+                alert("留言内容不能为空哦~");
+                return;
+            }
+
+            // 获取当前时间
+            const now = new Date();
+            const timeString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
+            // 创建新的留言 DOM 元素
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message sent'; // 设为“我发出的”
+            messageDiv.innerHTML = `
+                ${text}
+                <span class="message-time">${timeString}</span>
+            `;
+
+            // 将留言添加到列表
+            chatMessages.appendChild(messageDiv);
+
+            // 清空输入框并聚焦
+            messageInput.value = "";
+            messageInput.focus();
+
+            // 自动滚动到底部
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 监听按钮点击事件
+        sendBtn.addEventListener('click', sendMessage);
+
+        // 监听回车键事件
+        messageInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
 </body>
 </html>
