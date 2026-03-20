@@ -66,6 +66,6 @@ def save_message():
 
 
 if __name__ == '__main__':
-    # 本地调试时使用 5000 端口
+    # 获取 Render 分配的端口，如果没有则默认 5000
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=port)
