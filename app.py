@@ -1,47 +1,72 @@
 import os
-import json
+import certifi
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
-# --- 环境检查 ---
-try:
-    import flask
-    print(f"✅ Flask 环境配置成功！版本：{flask.__version__}")
-except ImportError:
-    print("❌ 报错：仍未找到 Flask。请尝试在 PyCharm 设置中手动安装。")
-    exit()
+from pymongo import MongoClient
+from datetime import datetime
 
 app = Flask(__name__)
-CORS(app)  # 允许手机跨域访问
+CORS(app)  # 允许跨域，解决前端调用问题
 
-DB_FILE = 'messages.json'
+# --- 1. 数据库配置 ---
 
-# 初始化数据文件
-if not os.path.exists(DB_FILE):
-    with open(DB_FILE, 'w', encoding='utf-8') as f:
-        json.dump([], f)
+MONGO_URI = os.environ.get("MONGO_URI")
 
-@app.route('/')
-def home():
-    return "摩天轮后端服务已启动！"
+
+client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+# ... 其余逻辑不变 ...
+
+try:
+    # 使用 certifi.where() 解决 Windows 下的 SSL 证书校验问题
+    client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+    db = client['ferris_wheel_db']  # 数据库名
+    collection = db['messages']  # 表名（集合名）
+    # 测试一下是否能连通
+    client.admin.command('ping')
+    print("✅ 成功连接到 MongoDB Atlas！")
+except Exception as e:
+    print(f"❌ 数据库连接失败: {e}")
+
+
+# --- 2. 路由逻辑 ---
 
 @app.route('/api/messages', methods=['GET'])
 def get_messages():
-    with open(DB_FILE, 'r', encoding='utf-8') as f:
-        return jsonify(json.load(f))
+    try:
+        # 从数据库读取最新的 50 条消息，按 ID 倒序排列
+        msgs = list(collection.find().sort("_id", -1).limit(50))
+
+        results = []
+        for m in reversed(msgs):  # 反转回正序显示在前端
+            results.append({
+                "user": m.get('user'),
+                "content": m.get('content'),
+                "avatar": m.get('avatar'),
+                "time": m.get('time', datetime.now().strftime("%H:%M"))
+            })
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/messages', methods=['POST'])
 def save_message():
-    new_msg = request.json
-    with open(DB_FILE, 'r+', encoding='utf-8') as f:
-        messages = json.load(f)
-        messages.append(new_msg)
-        f.seek(0)
-        json.dump(messages, f, ensure_ascii=False, indent=4)
-        f.truncate()
-    return jsonify({"status": "success"})
+    data = request.json
+    if not data:
+        return jsonify({"status": "error", "message": "无数据"}), 400
+
+    try:
+        # 添加当前服务器时间
+        data['time'] = datetime.now().strftime("%H:%M")
+        # 直接插入到 MongoDB
+        collection.insert_one(data)
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 if __name__ == '__main__':
-    # Render 会通过环境变量指定端口，如果没有则默认 5000
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    # 本地调试时使用 5000 端口
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
+    #mongodb + srv: // lizhao077: 2024bdl011659 = zl @ sankuaiban.vd7q0nr.mongodb.net /?appName = sankuaiban
