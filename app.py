@@ -67,6 +67,5 @@ def save_message():
 
 if __name__ == '__main__':
     # 本地调试时使用 5000 端口
+    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-    #mongodb + srv: // lizhao077: 2024bdl011659 = zl @ sankuaiban.vd7q0nr.mongodb.net /?appName = sankuaiban
