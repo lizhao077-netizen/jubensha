@@ -13,8 +13,13 @@ CORS(app)  # 允许跨域，解决前端调用问题
 MONGO_URI = os.environ.get("MONGO_URI")
 
 
-client = MongoClient(MONGO_URI, tlsCAFile=certifi.where(), tlsAllowInvalidCertificates=True)
-# ... 其余逻辑不变 ...
+client = MongoClient(
+    MONGO_URI, 
+    tlsCAFile=certifi.where(), 
+    tlsAllowInvalidCertificates=True,  # 允许无效证书
+    connectTimeoutMS=30000,            # 延长超时时间
+    socketTimeoutMS=30000
+)
 
 try:
     # 使用 certifi.where() 解决 Windows 下的 SSL 证书校验问题
