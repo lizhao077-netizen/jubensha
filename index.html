@@ -3,255 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>时久&徐向暖</title>
+    <title>摩天轮双人对话</title>
     <style>
-        :root {
-            --primary-color: #ff7675;
-            --bg-dark: #1a1a2e;
+        :root { --main-color: #ff7675; --bg: #1a1a2e; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); overflow: hidden; font-family: sans-serif; }
+        
+        /* 旋转摩天轮背景 */
+        .wheel-bg {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 80vw; height: 80vw; opacity: 0.3; z-index: 1;
+            background: url('https://img.icons8.com/color/480/ferris-wheel.png') no-repeat center/contain;
+            animation: rotate 20s linear infinite;
+        }
+        @keyframes rotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* 聊天容器 */
+        .chat-container { position: fixed; bottom: 20px; left: 5%; width: 90%; z-index: 10; transition: 0.3s; }
+        .chat-container.collapsed { transform: translateY(calc(100% - 50px)); }
+        
+        .chat-box { 
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px); border-radius: 20px; height: 65vh; display: flex; flex-direction: column;
         }
 
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: var(--bg-dark);
-            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-            overflow: hidden;
-        }
+        .chat-header { padding: 15px; color: white; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
+        
+        .user-toggle { display: flex; justify-content: center; gap: 20px; padding: 10px; background: rgba(0,0,0,0.2); }
+        .avatar-btn { width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; overflow: hidden; }
+        .avatar-btn.active { border-color: var(--main-color); transform: scale(1.1); }
+        .avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* --- 旋转摩天轮背景 --- */
-        .ferris-wheel-bg {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90vw; height: 90vw;
-            max-width: 500px; max-height: 500px;
-            background: url('https://img.icons8.com/color/480/ferris-wheel.png') no-repeat center;
-            background-size: contain;
-            opacity: 0.4;
-            animation: rotateWheel 30s linear infinite;
-            z-index: 1;
-        }
-        @keyframes rotateWheel { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        .msg-list { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 80%; padding: 8px 12px; border-radius: 12px; color: white; display: flex; gap: 8px; font-size: 14px; }
+        .msg.A { align-self: flex-start; background: rgba(255,255,255,0.2); }
+        .msg.B { align-self: flex-end; flex-direction: row-reverse; background: var(--main-color); }
+        .msg img { width: 30px; height: 30px; border-radius: 50%; }
 
-        /* --- 留言板主容器 --- */
-        .chat-container {
-            position: fixed;
-            bottom: 20px; left: 5%;
-            width: 90%;
-            z-index: 10;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        /* 收缩状态样式 */
-        .chat-container.collapsed {
-            transform: translateY(calc(100% - 50px));
-        }
-
-        .chat-box {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            display: flex;
-            flex-direction: column;
-            height: 60vh;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        /* 头部控制栏 */
-        .chat-header {
-            padding: 12px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: white;
-            cursor: pointer;
-        }
-
-        /* 身份切换区域 */
-        .identity-toggle {
-            display: flex;
-            gap: 15px;
-            padding: 10px;
-            background: rgba(0,0,0,0.2);
-            justify-content: center;
-        }
-
-        .user-profile {
-            position: relative;
-            width: 45px; height: 45px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            transition: 0.3s;
-            cursor: pointer;
-        }
-
-        .user-profile.active { border-color: var(--primary-color); transform: scale(1.1); }
-
-        .user-profile img {
-            width: 100%; height: 100%;
-            border-radius: 50%; object-fit: cover;
-            background: #eee;
-        }
-
-        .user-profile input { display: none; }
-
-        /* 消息展示区 */
-        .messages-list {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .msg {
-            max-width: 75%;
-            padding: 8px 12px;
-            border-radius: 12px;
-            font-size: 14px;
-            line-height: 1.5;
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-        }
-
-        .msg.left { align-self: flex-start; background: rgba(255,255,255,0.9); color: #333; }
-        .msg.right { align-self: flex-end; background: var(--primary-color); color: white; flex-direction: row-reverse; }
-
-        .msg-avatar { width: 30px; height: 30px; border-radius: 50%; }
-
-        /* 输入区 */
-        .input-area {
-            padding: 10px;
-            display: flex;
-            gap: 8px;
-            background: rgba(0,0,0,0.2);
-        }
-
-        #msg-input {
-            flex: 1;
-            border: none;
-            border-radius: 18px;
-            padding: 8px 15px;
-            outline: none;
-            font-size: 14px;
-        }
-
-        #send-btn {
-            background: var(--primary-color);
-            color: white; border: none;
-            border-radius: 18px;
-            padding: 0 15px;
-            font-weight: bold;
-        }
-
-        .collapse-icon { transition: 0.3s; }
-        .collapsed .collapse-icon { transform: rotate(180deg); }
+        .input-area { padding: 10px; display: flex; gap: 10px; }
+        input { flex: 1; border-radius: 20px; border: none; padding: 8px 15px; outline: none; }
+        button { background: var(--main-color); color: white; border: none; border-radius: 20px; padding: 0 15px; }
     </style>
 </head>
 <body>
-
-    <div class="ferris-wheel-bg"></div>
-
-    <div class="chat-container" id="chatContainer">
+    <div class="wheel-bg"></div>
+    <div class="chat-container" id="container">
         <div class="chat-box">
-            <div class="chat-header" onclick="toggleChat()">
-                <span>🎡 对话留言板</span>
-                <span class="collapse-icon">▼</span>
-            </div>
-
-            <div class="identity-toggle">
-                <div class="user-profile active" id="profileA" onclick="switchUser('A')">
-                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=A" id="imgA">
-                    <input type="file" id="fileA" accept="image/*" onchange="loadImg(event, 'A')">
+            <div class="chat-header" onclick="document.getElementById('container').classList.toggle('collapsed')">🎡 摩天轮留言板 (点击收缩)</div>
+            <div class="user-toggle">
+                <div class="avatar-btn active" id="btnA" onclick="setUser('A')">
+                    < img src="https://api.dicebear.com/7.x/adventurer/svg?seed=A" id="imgA">
+                    <input type="file" id="fileA" hidden onchange="upload(event, 'A')">
                 </div>
-                <div class="user-profile" id="profileB" onclick="switchUser('B')">
-                    <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=B" id="imgB">
-                    <input type="file" id="fileB" accept="image/*" onchange="loadImg(event, 'B')">
-                </div>
-                <p style="color:rgba(255,255,255,0.6); font-size:10px; margin:0; align-self:center;">长按头像更换</p >
-            </div>
-
-            <div class="messages-list" id="msgList">
-                <div class="msg left">
-                    <img class="msg-avatar" src="https://api.dicebear.com/7.x/adventurer/svg?seed=A">
+                <div class="avatar-btn" id="btnB" onclick="setUser('B')">
+                    < img src="https://api.dicebear.com/7.x/adventurer/svg?seed=B" id="imgB">
+                    <input type="file" id="fileB" hidden onchange="upload(event, 'B')">
                 </div>
             </div>
-
+            <div class="msg-list" id="list"></div>
             <div class="input-area">
-                <input type="text" id="msg-input" placeholder="输入内容...">
-                <button id="send-btn" onclick="send()">发送</button>
+                <input type="text" id="input" placeholder="写下留言...">
+                <button onclick="send()">发送</button>
             </div>
         </div>
     </div>
 
     <script>
+        // --- 请修改这里 ---
+        const SERVER_IP = "192.168.1.100"; // 换成你电脑运行 Python 时的局域网 IP
+        const API = `http://${SERVER_IP}:5000/api/messages`;
+        
         let currentUser = 'A';
-        const avatars = {
-            A: 'https://api.dicebear.com/7.x/adventurer/svg?seed=A',
-            B: 'https://api.dicebear.com/7.x/adventurer/svg?seed=B'
-        };
+        const avatars = { A: document.getElementById('imgA').src, B: document.getElementById('imgB').src };
 
-        // 切换用户
-        function switchUser(user) {
-            currentUser = user;
-            document.querySelectorAll('.user-profile').forEach(p => p.classList.remove('active'));
-            document.getElementById(`profile${user}`).classList.add('active');
+        function setUser(u) {
+            currentUser = u;
+            document.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn${u}`).classList.add('active');
         }
 
-        // 长按触发上传 (简单适配手机)
-        document.querySelectorAll('.user-profile').forEach(el => {
-            let timer;
-            el.addEventListener('touchstart', () => timer = setTimeout(() => el.querySelector('input').click(), 600));
-            el.addEventListener('touchend', () => clearTimeout(timer));
-            el.addEventListener('contextmenu', e => e.preventDefault()); // 禁止系统菜单
+        // 长按头像上传本地图片
+        document.querySelectorAll('.avatar-btn').forEach(btn => {
+            btn.oncontextmenu = (e) => { e.preventDefault(); btn.querySelector('input').click(); };
         });
 
-        // 本地加载图片
-        function loadImg(event, user) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const url = e.target.result;
-                    avatars[user] = url;
-                    document.getElementById(`img${user}`).src = url;
-                };
-                reader.readAsDataURL(file);
-            }
+        function upload(e, u) {
+            const reader = new FileReader();
+            reader.onload = () => { avatars[u] = reader.result; document.getElementById(`img${u}`).src = reader.result; };
+            reader.readAsDataURL(e.target.files[0]);
         }
 
-        // 发送消息
-        function send() {
-            const input = document.getElementById('msg-input');
-            const list = document.getElementById('msgList');
-            if (!input.value.trim()) return;
+        async function send() {
+            const input = document.getElementById('input');
+            if(!input.value.trim()) return;
 
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `msg ${currentUser === 'A' ? 'left' : 'right'}`;
-            msgDiv.innerHTML = `
-                < img class="msg-avatar" src="${avatars[currentUser]}">
-                ${input.value}
-            `;
-
-            list.appendChild(msgDiv);
+            const msgData = { user: currentUser, content: input.value, avatar: avatars[currentUser] };
+            await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(msgData) });
             input.value = '';
+            load();
+        }
+
+        async function load() {
+            const res = await fetch(API);
+            const data = await res.json();
+            const list = document.getElementById('list');
+            list.innerHTML = data.map(m => `
+                <div class="msg ${m.user}">
+                    < img src="${m.avatar}">
+                    <div>${m.content}</div>
+                </div>
+            `).join('');
             list.scrollTop = list.scrollHeight;
         }
 
-        // 收缩/展开
-        function toggleChat() {
-            document.getElementById('chatContainer').classList.toggle('collapsed');
-        }
-
-        // 回车发送
-        document.getElementById('msg-input').addEventListener('keypress', e => {
-            if(e.key === 'Enter') send();
-        });
+        setInterval(load, 3000); // 每3秒自动刷新一次
+        window.onload = load;
     </script>
 </body>
 </html>
