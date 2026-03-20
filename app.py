@@ -13,7 +13,7 @@ CORS(app)  # 允许跨域，解决前端调用问题
 MONGO_URI = os.environ.get("MONGO_URI")
 
 
-client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+client = MongoClient(MONGO_URI, tlsCAFile=certifi.where(), tlsAllowInvalidCertificates=True)
 # ... 其余逻辑不变 ...
 
 try:
