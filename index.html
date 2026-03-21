@@ -36,6 +36,30 @@
             100% { transform: translateY(110vh) rotate(5deg); opacity: 0; }
         }
 
+        /* --- 1. BGM 旋转图标样式 --- */
+        #music-control {
+            position: fixed; top: 20px; right: 20px;
+            width: 40px; height: 40px;
+            z-index: 1000; cursor: pointer;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .music-icon { width: 24px; height: 24px; transition: 0.3s; }
+
+        /* 播放时的旋转动画 */
+        .rotating {
+            animation: rotate-music 3s linear infinite;
+        }
+
+        @keyframes rotate-music {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         /* --- 3. 核心修改：对话框模式留言板 --- */
         #board-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -108,6 +132,14 @@
 </head>
 <body>
 
+    <audio id="bgm" loop preload="auto">
+        <source src="./music.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="music-control" onclick="toggleMusic()">
+        <span id="music-icon" class="music-icon">🎵</span>
+    </div>
+
     <div id="falling-container"></div>
     <button id="btn-open-board" onclick="openBoard(event)">留言</button>
 
@@ -140,6 +172,27 @@
         const API_URL = "https://jubensha.onrender.com/api/messages";
         let currentRole = 'right';
         let displayedIds = new Set();
+        const bgm = document.getElementById('bgm');
+        const musicCtrl = document.getElementById('music-control');
+
+        // --- 音乐控制逻辑 ---
+        function toggleMusic() {
+            if (bgm.paused) {
+                bgm.play();
+                musicCtrl.classList.add('rotating');
+            } else {
+                bgm.pause();
+                musicCtrl.classList.remove('rotating');
+            }
+        }
+
+        // 尝试自动播放 (现代浏览器通常要求用户点击一次后才能播放)
+        document.body.addEventListener('click', function() {
+            if (bgm.paused) {
+                bgm.play();
+                musicCtrl.classList.add('rotating');
+            }
+        }, { once: true });
 
         // 切换角色
         function selectRole(role) {
