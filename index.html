@@ -3,194 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>梦幻摩天轮留言板</title>
+    <title>时久&徐向暖</title>
     <style>
-        :root {
-            --rotate-speed: 30s; /* 旋转速度，越小越快 */
-        }
-
+        /* --- 1. 基础背景 (保持不变) --- */
         body {
-            margin: 0;
-            padding: 0;
-            width: 100vw;
-            height: 100vh;
-            /* 重要：替换为你下载的图片文件名 */
-            background: url('./bg.jpg') no-repeat center center fixed;
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            background: #222 url('./bg2.jpg') no-repeat center center fixed;
             background-size: cover;
-            font-family: 'Microsoft YaHei', sans-serif;
+            font-family: 'STHeiti', sans-serif;
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
-        /* 黑色遮罩，让背景图稍微暗一点，突显文字 */
         body::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.2);
-            z-index: 0;
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.2); z-index: 1; pointer-events: none;
         }
 
-        /* 摩天轮旋转容器 */
-        #wheel-container {
-            position: relative;
-            width: 600px;
-            height: 600px;
-            z-index: 1;
-            animation: wheel-rotate var(--rotate-speed) linear infinite;
+        /* --- 2. 飘落动画 (保持之前的浪漫效果) --- */
+        .falling-dialog {
+            position: absolute; z-index: 2;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            padding: 12px 18px; border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            max-width: 200px; pointer-events: none;
+            top: -100px; animation: fall-down linear forwards;
+        }
+        @keyframes fall-down {
+            0% { transform: translateY(0) rotate(-2deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(110vh) rotate(5deg); opacity: 0; }
         }
 
-        /* 留言气泡样式 */
-        .message-bubble {
-            position: absolute;
-            width: 100px;
-            min-height: 60px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(8px); /* 毛玻璃效果 */
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
-            padding: 8px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            /* 反向旋转，保持文字水平 */
-            animation: counter-rotate var(--rotate-speed) linear infinite;
+        /* --- 3. 核心修改：对话框模式留言板 --- */
+        #board-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); z-index: 100; justify-content: center; align-items: center;
+        }
+        .board-content {
+            background: #f5f5f5; width: 95%; max-width: 450px; height: 80vh;
+            border-radius: 25px; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
         }
 
-        .bubble-user {
-            font-size: 12px;
-            font-weight: bold;
-            color: #ffdae9;
-            text-shadow: 0 0 5px rgba(255, 105, 180, 0.8);
-            margin-bottom: 4px;
+        /* 顶部角色选择 */
+        .chat-header {
+            background: white; padding: 15px; border-bottom: 1px solid #ddd;
+            display: flex; justify-content: space-around;
+        }
+        .avatar-wrapper { cursor: pointer; text-align: center; opacity: 0.4; transition: 0.3s; }
+        .avatar-wrapper.active { opacity: 1; transform: scale(1.1); }
+        .avatar-img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #ff69b4; object-fit: cover; }
+
+        /* 对话内容列表 */
+        .message-list {
+            flex-grow: 1; overflow-y: auto; padding: 20px;
+            display: flex; flex-direction: column; gap: 15px;
+            background: #f0f2f5;
         }
 
-        .bubble-content {
-            font-size: 11px;
-            color: #ffffff;
-            margin: 0;
-            text-align: center;
-            word-break: break-all;
+        /* 对话气泡基础样式 */
+        .chat-bubble {
+            max-width: 75%; padding: 10px 15px; border-radius: 15px;
+            font-size: 14px; line-height: 1.5; position: relative;
+            word-wrap: break-word;
         }
 
-        @keyframes wheel-rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        /* 角色 A (左侧) */
+        .bubble-left {
+            align-self: flex-start;
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 2px;
         }
 
-        @keyframes counter-rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(-360deg); }
+        /* 角色 B (右侧) */
+        .bubble-right {
+            align-self: flex-end;
+            background: #95ec69; /* 经典的对话绿色 */
+            color: #000;
+            border-bottom-right-radius: 2px;
         }
 
-        /* 输入框区域（放在底部） */
+        /* --- 4. 输入区域 --- */
         .input-area {
-            position: fixed;
-            bottom: 30px;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: white; padding: 15px; display: flex; gap: 10px;
+            border-top: 1px solid #ddd;
+        }
+        textarea {
+            flex-grow: 1; height: 40px; border: 1px solid #ddd; border-radius: 20px;
+            padding: 10px 15px; resize: none; outline: none; font-family: inherit;
+        }
+        .btn-send {
+            background: #ff69b4; color: white; border: none; padding: 0 20px;
+            border-radius: 20px; cursor: pointer; font-weight: bold;
         }
 
-        input {
-            background: rgba(255,255,255,0.8);
-            border: none;
-            padding: 8px 15px;
-            border-radius: 15px;
-            outline: none;
+        #btn-open-board {
+            position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px;
+            border-radius: 50%; background: #ff69b4; color: white; border: none; cursor: pointer; z-index: 10;
         }
-
-        button {
-            background: #ff69b4;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        button:hover { background: #ff1493; }
     </style>
 </head>
 <body>
 
-    <div id="wheel-container">
-        </div>
+    <div id="falling-container"></div>
+    <button id="btn-open-board" onclick="openBoard(event)">留言</button>
 
-    <div class="input-area">
-        <input type="text" id="userInput" placeholder="你的名字">
-        <input type="text" id="msgInput" placeholder="写下浪漫留言...">
-        <button onclick="sendMsg()">发射</button>
+    <div id="board-overlay" onclick="closeBoard()">
+        <div class="board-content" onclick="event.stopPropagation()">
+            <div class="chat-header">
+                <div class="avatar-wrapper" id="role-left" onclick="selectRole('left')" oncontextmenu="triggerUpload(event, 'left')">
+                    <img src="./avatar1.jpg" id="img-left" class="avatar-img">
+                    <div style="font-size:10px;">时久</div>
+                </div>
+                <div style="align-self: center; color: #999; font-size: 14px;">正在对话...</div>
+                <div class="avatar-wrapper active" id="role-right" onclick="selectRole('right')" oncontextmenu="triggerUpload(event, 'right')">
+                    <img src="./avatar2.jpg" id="img-right" class="avatar-img">
+                    <div style="font-size:10px;">徐向暖</div>
+                </div>
+            </div>
+
+            <div class="message-list" id="message-list"></div>
+
+            <div class="input-area">
+                <textarea id="message" placeholder="输入消息..."></textarea>
+                <button class="btn-send" onclick="sendMsg()">发送</button>
+            </div>
+        </div>
     </div>
+
+    <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="handleAvatarFile(this)">
 
     <script>
         const API_URL = "https://jubensha.onrender.com/api/messages";
-        const RADIUS = 260; // 调整这个数值，让气泡刚好落在图片吊篮位置
+        let currentRole = 'right';
+        let displayedIds = new Set();
 
+        // 切换角色
+        function selectRole(role) {
+            currentRole = role;
+            document.querySelectorAll('.avatar-wrapper').forEach(el => el.classList.remove('active'));
+            document.getElementById(`role-${role}`).classList.add('active');
+        }
+
+        // 飘落逻辑
+        function createFalling(msg) {
+            const dialog = document.createElement('div');
+            dialog.className = 'falling-dialog';
+            dialog.style.left = (Math.random() * 70 + 10) + 'vw';
+            const duration = Math.random() * 5 + 10;
+            dialog.style.animationDuration = duration + 's';
+            dialog.innerHTML = `<div style="font-size:10px;color:#ff69b4">${msg.user}</div><div>${msg.content}</div>`;
+            document.getElementById('falling-container').appendChild(dialog);
+            setTimeout(() => dialog.remove(), duration * 1000);
+        }
+
+        // 数据加载与渲染
         async function loadMessages() {
             try {
                 const res = await fetch(API_URL);
-                const messages = await res.json();
-                renderWheel(messages);
-            } catch (err) {
-                console.error("加载失败", err);
-            }
-        }
+                const data = await res.json();
 
-        function renderWheel(messages) {
-            const container = document.getElementById('wheel-container');
-            container.innerHTML = '';
+                const list = document.getElementById('message-list');
+                // 渲染对话框模式：角色 A 在左，角色 B 在右
+                list.innerHTML = data.map(m => {
+                    const sideClass = (m.user === "徐向暖") ? "bubble-right" : "bubble-left";
+                    return `<div class="chat-bubble ${sideClass}">${m.content}</div>`;
+                }).join('');
 
-            const count = messages.length;
-            const centerX = 300;
-            const centerY = 300;
+                // 自动滚动到底部
+                list.scrollTop = list.scrollHeight;
 
-            messages.forEach((msg, i) => {
-                const angle = (i / count) * 2 * Math.PI;
-                const x = centerX + RADIUS * Math.cos(angle) - 50; // 50是气泡宽的一半
-                const y = centerY + RADIUS * Math.sin(angle) - 30; // 30是气泡高的一半
-
-                const bubble = document.createElement('div');
-                bubble.className = 'message-bubble';
-                bubble.style.left = `${x}px`;
-                bubble.style.top = `${y}px`;
-
-                bubble.innerHTML = `
-                    <div class="bubble-user">${msg.user || '匿名者'}</div>
-                    <p class="bubble-content">${msg.content}</p>
-                `;
-                container.appendChild(bubble);
-            });
+                // 处理飘落效果 (只针对最新一条)
+                if (data.length > 0) {
+                    const latest = data[data.length - 1];
+                    const id = latest.user + latest.content;
+                    if (!displayedIds.has(id)) {
+                        createFalling(latest);
+                        displayedIds.add(id);
+                    }
+                }
+            } catch (e) {}
         }
 
         async function sendMsg() {
-            const user = document.getElementById('userInput').value;
-            const content = document.getElementById('msgInput').value;
-            if(!content) return alert("写点什么吧");
+            const content = document.getElementById('message').value;
+            if(!content) return;
+            const user = (currentRole === 'right') ? "徐向暖" : "时久";
 
             await fetch(API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ user, content })
             });
-
-            document.getElementById('msgInput').value = '';
-            loadMessages(); // 刷新
+            document.getElementById('message').value = '';
+            loadMessages();
         }
 
-        // 初始加载
+        // 基础控制
+        function openBoard(e) { e.stopPropagation(); document.getElementById('board-overlay').style.display = 'flex'; loadMessages(); }
+        function closeBoard() { document.getElementById('board-overlay').style.display = 'none'; }
+
+        // 头像更换逻辑
+        let uploadTarget = 'left';
+        function triggerUpload(e, role) { e.preventDefault(); uploadTarget = role; document.getElementById('avatar-upload').click(); }
+        function handleAvatarFile(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => { document.getElementById(`img-${uploadTarget}`).src = e.target.result; };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // 初始化
         loadMessages();
-        // 每10秒自动刷新一次，同步别人的留言
-        setInterval(loadMessages, 10000);
+        setInterval(loadMessages, 5000);
     </script>
 </body>
 </html>
