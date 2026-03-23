@@ -71,6 +71,7 @@ def save_message():
 
 
 if __name__ == '__main__':
-    # 获取 Render 分配的端口，如果没有则默认 5000
-    port = int(os.environ.get("PORT", 5000))
+    # 获取 Render 分配的端口，如果没有则默认 10000 (Render 默认端口)
+    port = int(os.environ.get("PORT", 10000))
+    # 必须监听 0.0.0.0
     app.run(host='0.0.0.0', port=port)
